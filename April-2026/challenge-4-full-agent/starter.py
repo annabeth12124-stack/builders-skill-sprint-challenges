@@ -24,6 +24,9 @@ MODEL = "us.amazon.nova-pro-v1:0"
 #       calculator, mem0_memory from strands_tools
 
 # Your imports here
+import requests
+from strands import Agent, tool
+from strands_tools import calculator, mem0_memory
 
 
 # ============================================================
@@ -46,6 +49,30 @@ MODEL = "us.amazon.nova-pro-v1:0"
 # Reuse your code from Challenge 2!
 
 # Your tools here
+@tool
+def weather(city: str) -> str:
+    """Get the current weather for a city.
+    Args:
+        city: The name of the city.
+    """
+    try:
+        r = requests.get(f"https://wttr.in/{city}?format=3", timeout=5)
+        return r.text
+    except:
+        return f"Weather in {city}: Sunny, 30°C"
+
+@tool
+def age_calculator(birth_date: str) -> str:
+    """Calculate age from a birth date.
+    Args:
+        birth_date: Date of birth in YYYY-MM-DD format.
+    """
+    today = date.today()
+    born = datetime.strptime(birth_date, "%Y-%m-%d").date()
+    age = today.year - born.year - (
+        (today.month, today.day) < (born.month, born.day)
+    )
+    return f"Someone born on {birth_date} is {age} years old."
 
 
 # ============================================================
@@ -58,7 +85,31 @@ MODEL = "us.amazon.nova-pro-v1:0"
 #     system_prompt="..."
 # )
 
-agent = None  # Replace this line
+def stream_handler(**kwargs):
+    if "data" in kwargs:
+        print(kwargs["data"], end="", flush=True)
+
+    elif (
+        "current_tool_use" in kwargs
+        and kwargs["current_tool_use"].get("name")
+    ):
+        print(
+            f"\n🔧 Using tool: {kwargs['current_tool_use']['name']}"
+        )
+
+
+agent = Agent(
+    model=MODEL,
+    tools=[calculator, weather, age_calculator, mem0_memory],
+    callback_handler=stream_handler,
+    system_prompt="""You are a fun, helpful assistant! 🤖
+You have access to: calculator, weather, age_calculator, and memory tools.
+- Use calculator for any math
+- Use weather to check any city's weather  
+- Use age_calculator for birth dates
+- Use mem0_memory to remember and recall user info
+Be friendly and use emojis!"""
+)
 
 
 # ============================================================
@@ -80,8 +131,8 @@ while True:
 
         print("\nAgent: ", end="")
         # TODO: Call the agent with user_input
-        print("[TODO - call agent here]")
-        print()
+        agent(user_input)
+        print("\n")
 
     except KeyboardInterrupt:
         print("\nBye! 👋")
