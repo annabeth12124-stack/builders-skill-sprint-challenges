@@ -10,6 +10,7 @@ Instructions:
 """
 
 import os
+from urllib import response
 os.environ["BYPASS_TOOL_CONSENT"] = "true"
 
 from strands import Agent
@@ -23,6 +24,7 @@ MODEL = "us.amazon.nova-pro-v1:0"
 # Hint: from strands_tools import mem0_memory
 
 # Your import here
+from strands_tools import mem0_memory
 
 
 # ============================================================
@@ -31,7 +33,15 @@ MODEL = "us.amazon.nova-pro-v1:0"
 # Hint: Agent(model=MODEL, tools=[mem0_memory], system_prompt="...")
 # System prompt should tell the agent to store and recall user preferences
 
-agent = None  # Replace this line
+agent = Agent(
+    model=MODEL,
+    tools=[mem0_memory],
+    system_prompt="""You are a helpful assistant with memory.
+Use the mem0_memory tool to:
+- STORE important things the user tells you about themselves
+- RETRIEVE relevant memories when answering questions
+Always check your memory before responding."""
+)
 
 
 # ============================================================
@@ -52,9 +62,14 @@ while True:
             print("Bye! 👋")
             break
 
+        if not user_input:
+            continue
+        response = agent(user_input)
+        print(f"Agent: {response}\n")
+
         # TODO: Send user_input to the agent and print the response
         # Hint: response = agent(user_input)
-        print("Agent: [TODO - call the agent here]")
+        #print("Agent: [TODO - call the agent here]")
 
     except KeyboardInterrupt:
         print("\nBye! 👋")
